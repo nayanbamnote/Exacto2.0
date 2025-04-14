@@ -45,17 +45,11 @@ export function Toolbar() {
         <div className="h-6 w-px bg-border mx-1" />
         
         <BackgroundControl
-          handleInputChange={handleInputChange}
-          generateRandomColor={generateRandomColor}
-          backgroundColor={containerProps.backgroundColor}
         />
         
         <div className="h-6 w-px bg-border mx-1" />
         
         <BorderControls
-          handleInputChange={handleInputChange}
-          containerProps={containerProps}
-          setContainerProps={setContainerProps}
         />
         
         <div className="h-6 w-px bg-border mx-1" />
