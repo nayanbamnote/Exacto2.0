@@ -28,7 +28,7 @@ export function AddContainer({ containerProps, setContainerProps, handleInputCha
   const addContainer = useCanvasStore(state => state.addContainer);
   
   const handleCreateContainer = () => {
-    // Create a new container with properties from the form
+    // Create a new container with properties from the form 
     const container = {
       x: 50, // Default x position
       y: 50, // Default y position
@@ -44,16 +44,6 @@ export function AddContainer({ containerProps, setContainerProps, handleInputCha
     
     // Add the container to the store
     addContainer(container);
-    
-    // Reset form or close dropdown after adding
-    setContainerProps({
-      width: '200',
-      height: '100',
-      backgroundColor: '#ffffff',
-      borderStyle: 'solid',
-      borderWidth: '1',
-      borderColor: '#cccccc'
-    });
   };
 
   return (

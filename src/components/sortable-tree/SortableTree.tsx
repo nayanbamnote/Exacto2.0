@@ -42,26 +42,30 @@ import { SortableTreeItem } from './TreeItem';
 const initialItems: TreeItems = [
   {
     id: 'Home',
+    displayName: 'Home',
     children: [],
   },
   {
     id: 'Collections',
+    displayName: 'Collections',
     children: [
-      { id: 'Spring', children: [] },
-      { id: 'Summer', children: [] },
-      { id: 'Fall', children: [] },
-      { id: 'Winter', children: [] },
+      { id: 'Spring', displayName: 'Spring', children: [] },
+      { id: 'Summer', displayName: 'Summer', children: [] },
+      { id: 'Fall', displayName: 'Fall', children: [] },
+      { id: 'Winter', displayName: 'Winter', children: [] },
     ],
   },
   {
     id: 'About Us',
+    displayName: 'About Us',
     children: [],
   },
   {
     id: 'My Account',
+    displayName: 'My Account',
     children: [
-      { id: 'Addresses', children: [] },
-      { id: 'Order History', children: [] },
+      { id: 'Addresses', displayName: 'Addresses', children: [] },
+      { id: 'Order History', displayName: 'Order History', children: [] },
     ],
   },
 ];
@@ -102,6 +106,25 @@ interface SortableTreeProps {
   indicator?: boolean;
   removable?: boolean;
   className?: string;
+  onItemsChange?: (items: TreeItems) => void;
+  onRemove?: (id: string) => void;
+  onSelect?: (id: string) => void;
+  selectedId?: string | null;
+}
+
+// Simple helper function to compare tree arrays by their IDs and structure
+function areTreeItemsEqual(a: TreeItems, b: TreeItems): boolean {
+  if (a.length !== b.length) return false;
+  
+  for (let i = 0; i < a.length; i++) {
+    const itemA = a[i];
+    const itemB = b[i];
+    
+    if (String(itemA.id) !== String(itemB.id)) return false;
+    if (!areTreeItemsEqual(itemA.children, itemB.children)) return false;
+  }
+  
+  return true;
 }
 
 export function SortableTree({
@@ -111,6 +134,10 @@ export function SortableTree({
   indentationWidth = 20,
   removable,
   className,
+  onItemsChange,
+  onRemove,
+  onSelect,
+  selectedId,
 }: SortableTreeProps) {
   const [items, setItems] = useState(() => defaultItems);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -120,6 +147,19 @@ export function SortableTree({
     parentId: UniqueIdentifier | null;
     overId: UniqueIdentifier;
   } | null>(null);
+  
+  // Add a reference to track if items were updated internally
+  const itemsUpdatedInternally = useRef(false);
+  const prevDefaultItemsRef = useRef<TreeItems>(defaultItems);
+
+  // Update items when default items change
+  useEffect(() => {
+    if (!areTreeItemsEqual(prevDefaultItemsRef.current, defaultItems)) {
+      setItems(defaultItems);
+      prevDefaultItemsRef.current = defaultItems;
+      itemsUpdatedInternally.current = false;
+    }
+  }, [defaultItems]);
 
   const flattenedItems = useMemo(() => {
     const flattenedTree = flattenTree(items);
@@ -175,6 +215,15 @@ export function SortableTree({
     };
   }, [flattenedItems, offsetLeft]);
 
+  // Notify parent component when items change, but only if the change
+  // was triggered internally (not from a defaultItems prop change)
+  useEffect(() => {
+    if (onItemsChange && itemsUpdatedInternally.current) {
+      onItemsChange(items);
+      itemsUpdatedInternally.current = false;
+    }
+  }, [items, onItemsChange]);
+
   const announcements: Announcements = {
     onDragStart({ active }) {
       return `Picked up ${active.id}.`;
@@ -207,13 +256,27 @@ export function SortableTree({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={sortedIds} strategy={verticalListSortingStrategy}>
-          <ul className="p-0 m-0 list-none">
+          <ul
+            className="flex min-h-full flex-col gap-1"
+            style={{
+              maxWidth: '100%',
+            }}
+          >
             {flattenedItems.map(({ id, children, collapsed, depth }) => (
               <SortableTreeItem
                 key={id}
                 id={id}
                 value={String(id)}
-                depth={id === activeId && projected ? projected.depth : depth}
+                displayName={
+                  items
+                    .flatMap(item => [item, ...(item.children || [])])
+                    .find(item => item.id === id)?.displayName
+                }
+                depth={
+                  id === activeId && projected
+                    ? projected.depth
+                    : depth
+                }
                 indentationWidth={indentationWidth}
                 indicator={indicator}
                 collapsed={Boolean(collapsed && children.length)}
@@ -222,7 +285,13 @@ export function SortableTree({
                     ? () => handleCollapse(id)
                     : undefined
                 }
-                onRemove={removable ? () => handleRemove(id) : undefined}
+                onRemove={
+                  removable
+                    ? () => handleRemove(id)
+                    : undefined
+                }
+                onSelect={() => handleSelect(id)}
+                isSelected={selectedId === String(id)}
               />
             ))}
           </ul>
@@ -240,6 +309,7 @@ export function SortableTree({
                   clone
                   childCount={getChildCount(items, activeId) + 1}
                   value={String(activeId)}
+                  displayName={activeItem.displayName}
                   indentationWidth={indentationWidth}
                 />
               ) : null}
@@ -291,6 +361,8 @@ export function SortableTree({
       const sortedItems = arrayMove(clonedItems, activeIndex, overIndex);
       const newItems = buildTree(sortedItems);
 
+      // Mark that we're updating items internally before setting state
+      itemsUpdatedInternally.current = true;
       setItems(newItems);
     }
   }
@@ -309,10 +381,24 @@ export function SortableTree({
   }
 
   function handleRemove(id: UniqueIdentifier) {
-    setItems((items) => removeItem(items, id));
+    if (onRemove) {
+      onRemove(String(id));
+    }
+    
+    const newItems = removeItem(items, id);
+    
+    setItems(newItems);
+    itemsUpdatedInternally.current = true;
+  }
+
+  function handleSelect(id: UniqueIdentifier) {
+    if (onSelect) {
+      onSelect(String(id));
+    }
   }
 
   function handleCollapse(id: UniqueIdentifier) {
+    itemsUpdatedInternally.current = true;
     setItems((items) =>
       setProperty(items, id, 'collapsed', (value) => {
         return !value;

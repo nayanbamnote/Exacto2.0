@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
+import { useUIStore } from "@/stores/uiStore";
 
 interface ContainerRendererProps {
   containerId: string;
@@ -12,11 +13,23 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
 }) => {
   // Get containers with a stable reference to prevent re-renders
   const containers = useCanvasStore(state => state.containers);
+  // Get selected container ID and select function from the UI store
+  const selectedContainerId = useUIStore(state => state.selectedContainerId);
+  const selectContainer = useUIStore(state => state.selectContainer);
+  
   const container = containers[containerId];
   
   if (!container) {
     return null;
   }
+  
+  // Handle direct click on the container
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Don't propagate the click to parent containers
+    e.stopPropagation();
+    // Select this container
+    selectContainer(containerId);
+  };
   
   return (
     <div
@@ -24,6 +37,7 @@ export const ContainerRenderer: React.FC<ContainerRendererProps> = ({
       key={container.id}
       data-container-id={container.id}
       data-depth={depth}
+      onClick={handleContainerClick}
       style={{
         width: `${container.width}px`,
         height: `${container.height}px`,

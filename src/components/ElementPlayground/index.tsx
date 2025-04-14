@@ -6,9 +6,11 @@ import Selecto from "react-selecto";
 import { diff } from "@egjs/children-differ";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useCanvasStore as useDeviceSectionStore } from "@/stores/devicesectionStore";
+import { useUIStore } from "@/stores/uiStore";
 import { ContainerRenderer } from "./ContainerRenderer";
 import { useMoveableHandlers } from "./MoveableHandlers";
 import { handleNestedSelection } from "./SelectionUtils";
+import { getContainerId } from "./types";
 
 export function ElementPlayground() {
   const [targets, setTargets] = React.useState<Array<SVGElement | HTMLElement>>([]);
@@ -24,6 +26,9 @@ export function ElementPlayground() {
   
   // Get containers with a stable reference to prevent re-renders
   const containers = useCanvasStore(state => state.containers);
+  
+  // Get the UI store for container selection
+  const { selectedContainerId, selectContainer } = useUIStore();
   
   // Get root containers once and memoize the result
   const topLevelContainers = React.useMemo(() => {
@@ -51,17 +56,41 @@ export function ElementPlayground() {
     }
   }, [canvasWidth, canvasHeight, zoomLevel]);
 
+  // Sync targets when selectedContainerId changes
+  React.useEffect(() => {
+    if (selectedContainerId && selectoRef.current) {
+      // Find the DOM element corresponding to the selected container
+      const containerElement = document.querySelector(`[data-container-id="${selectedContainerId}"]`) as HTMLElement;
+      if (containerElement) {
+        const newTargets = [containerElement];
+        // Update Selecto's selection
+        selectoRef.current.setSelectedTargets(newTargets);
+        // Update our local targets state
+        setTargets(newTargets);
+      }
+    } else if (!selectedContainerId) {
+      // If nothing is selected, clear the targets
+      if (selectoRef.current) {
+        selectoRef.current.setSelectedTargets([]);
+      }
+      setTargets([]);
+    }
+  }, [selectedContainerId]);
+
   const handleClick = React.useCallback((e: any) => {
     const result = handlers.handleClick(e);
     if (result?.isDouble) {
       const selectableElements = selectoRef.current!.getSelectableElements();
       if (selectableElements.includes(result.target)) {
-        // Set the double-clicked element as the sole moveable target
-        selectoRef.current!.setSelectedTargets([result.target]);
-        setTargets([result.target]);
+        // Get the container ID from the target element
+        const containerId = getContainerId(result.target);
+        if (containerId) {
+          // Use the UI store to select the container
+          selectContainer(containerId);
+        }
       }
     }
-  }, [handlers]);
+  }, [handlers, selectContainer]);
 
   return (
     <div 
@@ -140,13 +169,27 @@ export function ElementPlayground() {
             if (!result.added.length && !result.removed.length) {
               return;
             }
+            
             if (e.isDragStartEnd) {
               e.inputEvent.preventDefault();
               moveable.waitToChangeTarget().then(() => {
                 moveable.dragStart(e.inputEvent);
               });
             }
+            
+            // Update local targets state
             setTargets(selected);
+            
+            // Update the UI store with the selected container ID
+            if (selected.length === 1) {
+              const containerId = getContainerId(selected[0]);
+              if (containerId) {
+                selectContainer(containerId);
+              }
+            } else if (selected.length === 0) {
+              // If nothing is selected, clear the UI store selection
+              selectContainer(null);
+            }
           }}
         />
         <div className="elements selecto-area relative" style={{ transformOrigin: 'top left' }}>

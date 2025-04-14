@@ -12,6 +12,7 @@ import {
 import { ClientOnlySortableTree } from "@/components/sortable-tree/ClientOnlySortableTree";
 import { ElementPlayground } from "@/components/ElementPlayground";
 import { Toolbar } from "@/components/Toolbar";
+import { CanvasTreeView } from "./sortable-tree/CanvasTreeView";
 
 interface SortableSidebarProps {
   defaultOpen?: boolean;
@@ -30,13 +31,7 @@ export function MainLayout({
           <SidebarContent>
             <SidebarMenu>
               <div className="px-2 py-2">
-                <ClientOnlySortableTree
-                  useContainers={true}
-                  collapsible={true}
-                  indicator={true}
-                  removable={true}
-                  className="w-full"
-                />
+                <CanvasTreeView />
               </div>
             </SidebarMenu>
           </SidebarContent>

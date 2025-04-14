@@ -11,7 +11,7 @@ import { ContainerProps } from "./Toolbar/types";
 
 export function Toolbar() {
   const [containerProps, setContainerProps] = useState<ContainerProps>({
-    width: "200",
+    width: "200", 
     height: "200",
     backgroundColor: "#f0f0f0",
     borderStyle: "solid",

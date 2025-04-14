@@ -20,8 +20,11 @@ export interface TreeItemProps extends Omit<HTMLAttributes<HTMLLIElement>, 'id'>
   indicator?: boolean;
   indentationWidth: number;
   value: string;
+  displayName?: string;
   onCollapse?(): void;
   onRemove?(): void;
+  onSelect?(): void;
+  isSelected?: boolean;
   wrapperRef?(node: HTMLLIElement): void;
 }
 
@@ -40,8 +43,11 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       collapsed,
       onCollapse,
       onRemove,
+      onSelect,
+      isSelected,
       style,
       value,
+      displayName,
       wrapperRef,
       ...props
     },
@@ -68,8 +74,11 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           ref={ref} 
           className={cn(
             'flex items-center gap-2 p-2 border bg-card rounded-md shadow-sm',
-            ghost && 'opacity-50'
+            ghost && 'opacity-50',
+            !disableInteraction && 'hover:bg-accent cursor-pointer',
+            isSelected && 'bg-accent border-accent-foreground'
           )}
+          onClick={onSelect}
         >
           <Button 
             variant="ghost" 
@@ -94,7 +103,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             </Button>
           )}
           
-          <span className="flex-1 text-sm font-medium">{value}</span>
+          <span className="flex-1 text-sm font-medium">{displayName || value}</span>
           
           {!clone && onRemove && (
             <Button 

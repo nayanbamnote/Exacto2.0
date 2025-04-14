@@ -67,7 +67,7 @@ const DEFAULT_CONTAINER: Omit<Container, 'id'> = {
  */
 export const useCanvasStore = create<CanvasState>()(
   immer((set, get) => ({
-    containers: {},
+    containers: {} as Record<string, Container>,
 
     /**
      * Add a new container with default or custom properties
@@ -198,6 +198,30 @@ export const useCanvasStore = create<CanvasState>()(
         // Log nesting operation
         console.log(`Nesting container ${childId} inside ${parentId}`);
         
+        // Helper function to calculate absolute position of a container
+        const getAbsolutePosition = (container: Container): { x: number, y: number } => {
+          if (!container.parentId) {
+            return { x: container.x, y: container.y };
+          }
+          
+          const parentContainer = state.containers[container.parentId];
+          if (!parentContainer) {
+            return { x: container.x, y: container.y };
+          }
+          
+          const parentAbsPos = getAbsolutePosition(parentContainer);
+          return {
+            x: container.x + parentAbsPos.x,
+            y: container.y + parentAbsPos.y
+          };
+        };
+        
+        // Calculate child's absolute position before any changes
+        const childAbsPos = getAbsolutePosition(child);
+        
+        // Calculate parent's absolute position
+        const parentAbsPos = getAbsolutePosition(parent);
+        
         // Remove from previous parent if exists
         if (child.parentId) {
           const prevParent = state.containers[child.parentId];
@@ -205,6 +229,14 @@ export const useCanvasStore = create<CanvasState>()(
             prevParent.children = prevParent.children.filter((id) => id !== childId);
           }
         }
+        
+        // Calculate new relative position to maintain the absolute position
+        const adjustedX = childAbsPos.x - parentAbsPos.x;
+        const adjustedY = childAbsPos.y - parentAbsPos.y;
+        
+        // Update the child's coordinates to be relative to the parent
+        child.x = adjustedX;
+        child.y = adjustedY;
         
         // Update the child's parent reference
         child.parentId = parentId;
@@ -229,14 +261,41 @@ export const useCanvasStore = create<CanvasState>()(
         if (!child || !child.parentId) return;
         
         const parent = state.containers[child.parentId];
+        if (!parent) {
+          child.parentId = null;
+          return;
+        }
         
         // Log unnesting operation
         console.log(`Unnesting container ${childId} from parent ${child.parentId}`);
         
-        if (parent) {
-          // Remove child from parent's children array
-          parent.children = parent.children.filter((id) => id !== childId);
-        }
+        // Helper function to calculate absolute position of a container
+        const getAbsolutePosition = (container: Container): { x: number, y: number } => {
+          if (!container.parentId) {
+            return { x: container.x, y: container.y };
+          }
+          
+          const parentContainer = state.containers[container.parentId];
+          if (!parentContainer) {
+            return { x: container.x, y: container.y };
+          }
+          
+          const parentAbsPos = getAbsolutePosition(parentContainer);
+          return {
+            x: container.x + parentAbsPos.x,
+            y: container.y + parentAbsPos.y
+          };
+        };
+        
+        // Calculate child's current absolute position
+        const childAbsPos = getAbsolutePosition(child);
+        
+        // Remove child from parent's children array
+        parent.children = parent.children.filter((id) => id !== childId);
+        
+        // Update the child's coordinates to be absolute
+        child.x = childAbsPos.x;
+        child.y = childAbsPos.y;
         
         // Remove parent reference from child
         child.parentId = null;
