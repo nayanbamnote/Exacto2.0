@@ -7,14 +7,20 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Smartphone, Tablet, Monitor, Laptop } from "lucide-react";
+import { useCanvasStore, devicePresets } from "@/stores/devicesectionStore";
 
 export function DeviceSelector() {
+  const { selectedDevice, setSelectedDevice } = useCanvasStore();
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div>
-            <Select defaultValue="desktop">
+            <Select
+              value={selectedDevice}
+              onValueChange={setSelectedDevice}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select device" />
               </SelectTrigger>

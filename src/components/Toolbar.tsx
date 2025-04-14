@@ -4,7 +4,9 @@ import { ZoomControls } from "./Toolbar/ZoomControls";
 import { DimensionsControl } from "./Toolbar/DimensionsControl";
 import { BackgroundControl } from "./Toolbar/BackgroundControl";
 import { BorderControls } from "./Toolbar/BorderControls";
-import { ContainerCreator } from "./Toolbar/ContainerCreator";
+import { AddContainer } from "./Toolbar/AddContainer";
+import { CodeGenerator } from "./Toolbar/CodeGenerator";
+import { ZIndexManager } from "./Toolbar/ZIndexManager";
 import { ContainerProps } from "./Toolbar/types";
 
 export function Toolbar() {
@@ -31,7 +33,7 @@ export function Toolbar() {
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      <div className="flex items-center gap-3 bg-background border rounded-md p-2 shadow-sm">
+      <div className="flex items-center gap-2 bg-background border rounded-md p-2 shadow-sm">
         <DeviceSelector />
         
         <ZoomControls />
@@ -58,11 +60,19 @@ export function Toolbar() {
         
         <div className="h-6 w-px bg-border mx-1" />
         
-        <ContainerCreator
+        <AddContainer
           containerProps={containerProps}
           setContainerProps={setContainerProps}
           handleInputChange={handleInputChange}
         />
+
+        <div className="h-6 w-px bg-border mx-1" />
+        
+        <ZIndexManager />
+
+        <div className="h-6 w-px bg-border mx-1" />
+        
+        <CodeGenerator />
       </div>
     </div>
   );

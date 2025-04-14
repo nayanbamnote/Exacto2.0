@@ -5,16 +5,39 @@ import Moveable from "react-moveable";
 import Selecto from "react-selecto";
 import { diff } from "@egjs/children-differ";
 import { dummyContainers } from "../data/dummyCanvasData";
+import { useCanvasStore } from "@/stores/devicesectionStore";
 
 export function ElementPlayground() {
   const [targets, setTargets] = React.useState<Array<SVGElement | HTMLElement>>([]);
   const moveableRef = React.useRef<Moveable>(null);
   const selectoRef = React.useRef<Selecto>(null);
+  const canvasRef = React.useRef<HTMLDivElement>(null);
+  
+  // Get store values
+  const { canvasWidth, canvasHeight, zoomLevel, selectedDevice } = useCanvasStore();
+  
+  // Calculate container dimensions based on zoomLevel
+  const scaledWidth = canvasWidth * zoomLevel;
+  const scaledHeight = canvasHeight * zoomLevel;
   
   // Get top-level containers (those with no parent)
   const topLevelContainers = Object.values(dummyContainers).filter(
     container => container.parentId === null
   );
+
+  // Apply canvas dimensions and zoom
+  React.useEffect(() => {
+    if (canvasRef.current) {
+      const elementsContainer = canvasRef.current.querySelector('.elements') as HTMLElement;
+      if (elementsContainer) {
+        // Apply zoom using transform scale
+        elementsContainer.style.transform = `scale(${zoomLevel})`;
+        elementsContainer.style.transformOrigin = 'top left';
+        elementsContainer.style.width = `${canvasWidth}px`;
+        elementsContainer.style.height = `${canvasHeight}px`;
+      }
+    }
+  }, [canvasWidth, canvasHeight, zoomLevel]);
 
   // Recursive function to render nested containers
   const renderContainer = (containerId: string, depth = 0) => {
@@ -58,19 +81,29 @@ export function ElementPlayground() {
   // Handle selecting nested elements
   const handleNestedSelection = (selected: Array<HTMLElement | SVGElement>) => {
     // Option 1: Keep only top-level elements (current behavior)
-    if (false) { // Set to true to enable this option
+    // if (false) { // Set to true to enable this option
       return selected.filter(target => 
         selected.every(target2 => target === target2 || !target2.contains(target))
       );
-    }
+    // }
     
     // Option 2: Keep all selected elements, both parent and children
-    return selected;
+    // return selected;
   };
 
   return (
-    <div className="relative w-full h-[600px] border border-border rounded-lg overflow-hidden bg-gray-50 p-4">
-      <div className="relative mt-4 h-[450px] border border-dashed border-gray-300 rounded-md p-2">
+    <div 
+      id="window" 
+      ref={canvasRef}
+      className="relative bg-neutral-200 w-full h-full pt-20 px-6 pb-6 flex items-center justify-center"
+    >
+      <div className="device-frame bg-white relative overflow-hidden max-w-full max-h-full border border-dashed border-gray-300 rounded-md p-4"
+        style={{
+          width: `${scaledWidth}px`,
+          height: `${scaledHeight}px`,
+          transition: "width 0.3s, height 0.3s",
+        }}
+      >
         <Moveable
           ref={moveableRef}
           draggable={true}
@@ -172,8 +205,12 @@ export function ElementPlayground() {
             setTargets(selected);
           }}
         />
-        <div className="elements selecto-area relative w-full h-full">
+        <div className="elements selecto-area relative" style={{ transformOrigin: 'top left' }}>
           {topLevelContainers.map(container => renderContainer(container.id))}
+        </div>
+        
+        <div className="absolute bottom-2 right-2 text-sm text-gray-500 bg-white/50 px-2 py-1 rounded">
+          {selectedDevice} • {canvasWidth}×{canvasHeight} • {Math.round(zoomLevel * 100)}%
         </div>
       </div>
     </div>

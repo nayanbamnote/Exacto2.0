@@ -1,41 +1,66 @@
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ZoomIn } from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { useCanvasStore } from "@/stores/devicesectionStore";
 
 export function ZoomControls() {
+  const { zoomLevel, incrementZoom, decrementZoom, resetZoom } = useCanvasStore();
+  
   return (
     <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div>
-            <Select defaultValue="100">
-              <SelectTrigger className="w-[100px]">
-                <div className="flex items-center gap-1">
-                  <ZoomIn className="h-3.5 w-3.5" />
-                  <SelectValue placeholder="Zoom" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="50">50%</SelectItem>
-                <SelectItem value="75">75%</SelectItem>
-                <SelectItem value="100">100%</SelectItem>
-                <SelectItem value="125">125%</SelectItem>
-                <SelectItem value="150">150%</SelectItem>
-                <SelectItem value="200">200%</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Set zoom level</p>
-        </TooltipContent>
-      </Tooltip>
+      <div className="flex items-center space-x-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={decrementZoom}
+              className="h-8 w-8"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom out</p>
+          </TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="h-8 px-2 text-xs font-mono"
+              onClick={resetZoom}
+            >
+              {Math.round(zoomLevel * 100)}%
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Reset zoom</p>
+          </TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={incrementZoom}
+              className="h-8 w-8"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom in</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </TooltipProvider>
   );
 } 

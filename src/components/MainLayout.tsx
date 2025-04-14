@@ -41,12 +41,17 @@ export function MainLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex-1 p-6">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="flex-1 flex flex-col relative bg-sidebar">
+          {/* Fixed floating toolbar */}
+          <div className="fixed top-4  z-10 flex items-center gap-4">
             <SidebarTrigger />
             <Toolbar />
           </div>
-          <ElementPlayground />
+          
+          {/* Content area with full height for canvas */}
+          <div className="flex-1">
+            <ElementPlayground />
+          </div>
         </div>
       </div>
     </SidebarProvider>
