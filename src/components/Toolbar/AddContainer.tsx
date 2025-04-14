@@ -17,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlusCircle } from "lucide-react";
 import { ContainerProps, ContainerPropsChangeHandler } from "./types";
+import { useCanvasStore } from "@/stores/canvasStore";
 
 interface AddContainerProps extends ContainerPropsChangeHandler {
   containerProps: ContainerProps;
@@ -24,8 +25,39 @@ interface AddContainerProps extends ContainerPropsChangeHandler {
 }
 
 export function AddContainer({ containerProps, setContainerProps, handleInputChange }: AddContainerProps) {
+  const addContainer = useCanvasStore(state => state.addContainer);
+  
+  const handleCreateContainer = () => {
+    // Create a new container with properties from the form
+    const container = {
+      x: 50, // Default x position
+      y: 50, // Default y position
+      width: Number(containerProps.width) || 200,
+      height: Number(containerProps.height) || 100,
+      rotation: 0, // Default rotation
+      styles: {
+        backgroundColor: containerProps.backgroundColor || '#ffffff',
+        border: `${containerProps.borderWidth || 1}px ${containerProps.borderStyle || 'solid'} ${containerProps.borderColor || '#cccccc'}`,
+        zIndex: 1,
+      }
+    };
+    
+    // Add the container to the store
+    addContainer(container);
+    
+    // Reset form or close dropdown after adding
+    setContainerProps({
+      width: '200',
+      height: '100',
+      backgroundColor: '#ffffff',
+      borderStyle: 'solid',
+      borderWidth: '1',
+      borderColor: '#cccccc'
+    });
+  };
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <TooltipProvider>
         <Tooltip>
           <DropdownMenuTrigger asChild>
@@ -126,7 +158,7 @@ export function AddContainer({ containerProps, setContainerProps, handleInputCha
             />
           </div>
           
-          <Button className="col-span-2 mt-2">
+          <Button className="col-span-2 mt-2" onClick={handleCreateContainer}>
             Create Container
           </Button>
         </div>

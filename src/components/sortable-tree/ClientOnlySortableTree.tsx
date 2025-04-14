@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { SortableTree } from './SortableTree';
 import { CustomSortableTree } from './CustomSortableTree';
 import type { TreeItems } from './types';
-import { dummyContainers } from '../../data/dummyCanvasData';
+import { useCanvasStore } from '@/stores/canvasStore';
 
 interface ClientOnlySortableTreeProps {
   collapsible?: boolean;
@@ -16,52 +16,54 @@ interface ClientOnlySortableTreeProps {
   useContainers?: boolean;
 }
 
-// Convert container data to TreeItems format
-const convertContainersToTreeItems = (): TreeItems => {
-  // First create a map of all containers
-  const containerMap = new Map();
-  
-  // Initialize all containers as TreeItems
-  Object.values(dummyContainers).forEach(container => {
-    containerMap.set(container.id, {
-      id: container.id,
-      children: [],
-      collapsed: false
-    });
-  });
-  
-  // Then populate children
-  Object.values(dummyContainers).forEach(container => {
-    if (container.children.length > 0) {
-      const parentItem = containerMap.get(container.id);
-      container.children.forEach(childId => {
-        if (containerMap.has(childId)) {
-          parentItem.children.push(containerMap.get(childId));
-        }
-      });
-    }
-  });
-  
-  // Return only root containers (those with no parent)
-  return Object.values(dummyContainers)
-    .filter(container => container.parentId === null)
-    .map(container => containerMap.get(container.id));
-};
-
 export function ClientOnlySortableTree(props: ClientOnlySortableTreeProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [treeItems, setTreeItems] = useState<TreeItems>([]);
+  
+  // Get containers from the store with a stable reference
+  const containers = useCanvasStore(state => state.containers);
+
+  // Convert container data to TreeItems format - this returns the actual tree items
+  const treeItems = useMemo(() => {
+    if (!props.useContainers) {
+      return props.defaultItems || [];
+    }
+    
+    // Create a map of all containers
+    const containerMap = new Map();
+    
+    // Initialize all containers as TreeItems
+    Object.values(containers).forEach(container => {
+      containerMap.set(container.id, {
+        id: container.id,
+        children: [],
+        collapsed: false
+      });
+    });
+    
+    // Then populate children
+    Object.values(containers).forEach(container => {
+      if (container.children.length > 0) {
+        const parentItem = containerMap.get(container.id);
+        if (parentItem) {  // Add null check
+          container.children.forEach(childId => {
+            if (containerMap.has(childId)) {
+              parentItem.children.push(containerMap.get(childId));
+            }
+          });
+        }
+      }
+    });
+    
+    // Return only root containers (those with no parent)
+    return Object.values(containers)
+      .filter(container => container.parentId === null)
+      .map(container => containerMap.get(container.id))
+      .filter(Boolean); // Filter out any undefined values
+  }, [containers, props.useContainers, props.defaultItems]);
 
   useEffect(() => {
     setIsMounted(true);
-    
-    // If useContainers is true, use container data, otherwise use props.defaultItems
-    if (props.useContainers) {
-      setTreeItems(convertContainersToTreeItems());
-    } else if (props.defaultItems) {
-      setTreeItems(props.defaultItems);
-    }
-  }, [props.useContainers, props.defaultItems]);
+  }, []);
 
   if (!isMounted) {
     // Return a placeholder with the same dimensions during SSR

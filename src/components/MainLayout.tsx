@@ -34,7 +34,7 @@ export function MainLayout({
                   useContainers={true}
                   collapsible={true}
                   indicator={true}
-                  removable={false}
+                  removable={true}
                   className="w-full"
                 />
               </div>

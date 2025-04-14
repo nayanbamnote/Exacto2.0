@@ -11,6 +11,7 @@ export type Container = {
   y: number;
   width: number;
   height: number;
+  rotation: number;
   styles: {
     backgroundColor: string;
     border: string;
@@ -51,6 +52,7 @@ const DEFAULT_CONTAINER: Omit<Container, 'id'> = {
   y: 0,
   width: 200,
   height: 100,
+  rotation: 0,
   styles: {
     backgroundColor: '#ffffff',
     border: '1px solid #cccccc',
@@ -79,6 +81,9 @@ export const useCanvasStore = create<CanvasState>()(
           ...partialContainer,
           id,
         };
+        
+        // Log the new container
+        console.log('Added container:', state.containers[id]);
       });
       
       return id;
@@ -91,14 +96,47 @@ export const useCanvasStore = create<CanvasState>()(
       set((state) => {
         const container = state.containers[id];
         if (container) {
-          state.containers[id] = {
-            ...container,
-            ...updates,
-            styles: {
-              ...container.styles,
-              ...(updates.styles || {}),
-            },
-          };
+          // Check if there are actual changes to avoid unnecessary updates
+          let hasChanges = false;
+          
+          // Check primitive props for changes
+          for (const key in updates) {
+            if (key !== 'styles' && 
+                updates[key as keyof Partial<Container>] !== 
+                container[key as keyof Container]) {
+              hasChanges = true;
+              break;
+            }
+          }
+          
+          // Check style props for changes if updates includes styles
+          if (!hasChanges && updates.styles) {
+            const updatedStyles = updates.styles as Partial<Container['styles']>;
+            for (const styleKey in updatedStyles) {
+              if (styleKey in container.styles &&
+                  updatedStyles[styleKey as keyof Container['styles']] !== 
+                  container.styles[styleKey as keyof Container['styles']]) {
+                hasChanges = true;
+                break;
+              }
+            }
+          }
+          
+          // Only update if there are actual changes
+          if (hasChanges) {
+            state.containers[id] = {
+              ...container,
+              ...updates,
+              styles: {
+                ...container.styles,
+                ...(updates.styles || {}),
+              },
+            };
+            
+            // Log the updated container
+            console.log('Updated container:', id, 'with updates:', updates);
+            console.log('Container after update:', state.containers[id]);
+          }
         }
       });
     },
@@ -111,6 +149,9 @@ export const useCanvasStore = create<CanvasState>()(
         const container = state.containers[id];
         
         if (!container) return;
+        
+        // Log the container being removed
+        console.log('Removing container:', container);
         
         // Remove from parent's children array if it has a parent
         if (container.parentId) {
@@ -154,6 +195,9 @@ export const useCanvasStore = create<CanvasState>()(
         
         if (!child || !parent || childId === parentId) return;
         
+        // Log nesting operation
+        console.log(`Nesting container ${childId} inside ${parentId}`);
+        
         // Remove from previous parent if exists
         if (child.parentId) {
           const prevParent = state.containers[child.parentId];
@@ -169,6 +213,10 @@ export const useCanvasStore = create<CanvasState>()(
         if (!parent.children.includes(childId)) {
           parent.children.push(childId);
         }
+        
+        // Log the updated parent and child
+        console.log('Updated child:', child);
+        console.log('Updated parent:', parent);
       });
     },
 
@@ -181,6 +229,10 @@ export const useCanvasStore = create<CanvasState>()(
         if (!child || !child.parentId) return;
         
         const parent = state.containers[child.parentId];
+        
+        // Log unnesting operation
+        console.log(`Unnesting container ${childId} from parent ${child.parentId}`);
+        
         if (parent) {
           // Remove child from parent's children array
           parent.children = parent.children.filter((id) => id !== childId);
@@ -188,6 +240,9 @@ export const useCanvasStore = create<CanvasState>()(
         
         // Remove parent reference from child
         child.parentId = null;
+        
+        // Log the updated child
+        console.log('Updated child after unnesting:', child);
       });
     },
 
@@ -217,17 +272,23 @@ export const useCanvasStore = create<CanvasState>()(
      */
     getRootContainers: () => {
       const { containers } = get();
-      
-      return Object.values(containers).filter(
+      const rootContainers = Object.values(containers).filter(
         (container) => container.parentId === null
       );
+      
+      // Log all root containers
+      console.log('Root containers:', rootContainers);
+      
+      return rootContainers;
     },
 
     /**
      * Get all containers in the store
      */
     getAllContainers: () => {
-      return Object.values(get().containers);
+      const allContainers = Object.values(get().containers);
+      console.log('All containers:', allContainers);
+      return allContainers;
     },
   }))
 ); 
