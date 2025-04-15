@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, RefreshCw } from "lucide-react";
 import { ContainerProps, ContainerPropsChangeHandler } from "./types";
 import { useCanvasStore } from "@/stores/canvasStore";
 
@@ -44,6 +44,14 @@ export function AddContainer({ containerProps, setContainerProps, handleInputCha
     
     // Add the container to the store
     addContainer(container);
+  };
+
+  const generateRandomColor = () => {
+    const randomColor = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+    setContainerProps({
+      ...containerProps,
+      backgroundColor: randomColor
+    });
   };
 
   return (
@@ -91,15 +99,34 @@ export function AddContainer({ containerProps, setContainerProps, handleInputCha
           
           <div className="space-y-1">
             <Label htmlFor="newBgColor" className="text-xs">Background</Label>
-            <Input
-              id="newBgColor"
-              name="backgroundColor"
-              type="text"
-              value={containerProps.backgroundColor}
-              onChange={handleInputChange}
-              placeholder="#000000"
-              className="h-8"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="newBgColor"
+                name="backgroundColor"
+                type="text"
+                value={containerProps.backgroundColor}
+                onChange={handleInputChange}
+                placeholder="#000000"
+                className="h-8 flex-1"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={generateRandomColor}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Generate random color</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           
           <div className="space-y-1">

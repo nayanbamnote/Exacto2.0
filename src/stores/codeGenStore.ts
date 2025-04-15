@@ -26,7 +26,12 @@ interface CodeGenState {
 /**
  * Generate HTML/CSS code from a container
  */
-const generateContainerCode = (container: Container, containers: Record<string, Container>, indentLevel: number = 0): string => {
+const generateContainerCode = (
+  container: Container, 
+  containers: Record<string, Container>, 
+  indentLevel: number = 0,
+  cumulativeHeight: number = 0
+): string => {
   const indent = '  '.repeat(indentLevel);
   const { id, x, y, width, height, styles, children } = container;
   
@@ -49,8 +54,9 @@ const generateContainerCode = (container: Container, containers: Record<string, 
   } else {
     cssProperties.push(
       'position: relative',
-      `margin-left: ${x}px`,
-      `margin-top: ${y}px`
+      `left: ${x}px`,
+      // Adjust the top position to account for previous containers' heights
+      `top: ${y - cumulativeHeight}px`
     );
   }
   
@@ -72,7 +78,7 @@ const generateContainerCode = (container: Container, containers: Record<string, 
     for (const childId of sortedChildrenIds) {
       const childContainer = containers[childId];
       if (childContainer) {
-        html += generateContainerCode(childContainer, containers, indentLevel + 1);
+        html += generateContainerCode(childContainer, containers, indentLevel + 1, 0);
       }
     }
   }
@@ -132,9 +138,13 @@ export const useCodeGenStore = create<CodeGenState>()(
           (a, b) => (a.styles.zIndex || 0) - (b.styles.zIndex || 0)
         );
         
-        // Generate code for each root container
+        // Calculate cumulative heights for relative positioning adjustment
+        let cumulativeHeight = 0;
+        
+        // Generate code for each root container with adjusted positioning
         for (const container of sortedRootContainers) {
-          generatedHtml += generateContainerCode(container, containers, 1);
+          generatedHtml += generateContainerCode(container, containers, 1, cumulativeHeight);
+          cumulativeHeight += container.height;
         }
         
         // Complete HTML template
