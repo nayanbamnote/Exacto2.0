@@ -6,6 +6,7 @@ import { BackgroundControl } from "./Toolbar/BackgroundControl";
 import { BorderControls } from "./Toolbar/BorderControls";
 import { AddContainer } from "./Toolbar/AddContainer";
 import { CodeGenerator } from "./Toolbar/CodeGenerator";
+import { ImportCode } from "./Toolbar/ImportCode";
 import { ZIndexManager } from "./Toolbar/ZIndexManager";
 import { ContainerProps } from "./Toolbar/types";
 
@@ -67,6 +68,10 @@ export function Toolbar() {
         <div className="h-6 w-px bg-border mx-1" />
         
         <CodeGenerator />
+        
+        <div className="h-6 w-px bg-border mx-1" />
+        
+        <ImportCode />
       </div>
     </div>
   );

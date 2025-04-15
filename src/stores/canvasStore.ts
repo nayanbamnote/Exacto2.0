@@ -68,12 +68,11 @@ const DEFAULT_CONTAINER: Omit<Container, 'id'> = {
 export const useCanvasStore = create<CanvasState>()(
   immer((set, get) => ({
     containers: {} as Record<string, Container>,
-
     /**
      * Add a new container with default or custom properties
      */
     addContainer: (partialContainer: Partial<Container> = {}) => {
-      const id = nanoid();
+      const id = partialContainer.id || nanoid();
       
       set((state) => {
         state.containers[id] = {
@@ -81,9 +80,6 @@ export const useCanvasStore = create<CanvasState>()(
           ...partialContainer,
           id,
         };
-        
-        // Log the new container
-        console.log('Added container:', state.containers[id]);
       });
       
       return id;
@@ -132,11 +128,7 @@ export const useCanvasStore = create<CanvasState>()(
                 ...(updates.styles || {}),
               },
             };
-            
-            // Log the updated container
-            console.log('Updated container:', id, 'with updates:', updates);
-            console.log('Container after update:', state.containers[id]);
-          }
+        }
         }
       });
     },
@@ -149,9 +141,6 @@ export const useCanvasStore = create<CanvasState>()(
         const container = state.containers[id];
         
         if (!container) return;
-        
-        // Log the container being removed
-        console.log('Removing container:', container);
         
         // Remove from parent's children array if it has a parent
         if (container.parentId) {
@@ -194,9 +183,6 @@ export const useCanvasStore = create<CanvasState>()(
         const parent = state.containers[parentId];
         
         if (!child || !parent || childId === parentId) return;
-        
-        // Log nesting operation
-        console.log(`Nesting container ${childId} inside ${parentId}`);
         
         // Helper function to calculate absolute position of a container
         const getAbsolutePosition = (container: Container): { x: number, y: number } => {
@@ -245,10 +231,6 @@ export const useCanvasStore = create<CanvasState>()(
         if (!parent.children.includes(childId)) {
           parent.children.push(childId);
         }
-        
-        // Log the updated parent and child
-        console.log('Updated child:', child);
-        console.log('Updated parent:', parent);
       });
     },
 
@@ -265,10 +247,7 @@ export const useCanvasStore = create<CanvasState>()(
           child.parentId = null;
           return;
         }
-        
-        // Log unnesting operation
-        console.log(`Unnesting container ${childId} from parent ${child.parentId}`);
-        
+     
         // Helper function to calculate absolute position of a container
         const getAbsolutePosition = (container: Container): { x: number, y: number } => {
           if (!container.parentId) {
@@ -299,10 +278,7 @@ export const useCanvasStore = create<CanvasState>()(
         
         // Remove parent reference from child
         child.parentId = null;
-        
-        // Log the updated child
-        console.log('Updated child after unnesting:', child);
-      });
+       });
     },
 
     /**
@@ -335,9 +311,6 @@ export const useCanvasStore = create<CanvasState>()(
         (container) => container.parentId === null
       );
       
-      // Log all root containers
-      console.log('Root containers:', rootContainers);
-      
       return rootContainers;
     },
 
@@ -346,7 +319,6 @@ export const useCanvasStore = create<CanvasState>()(
      */
     getAllContainers: () => {
       const allContainers = Object.values(get().containers);
-      console.log('All containers:', allContainers);
       return allContainers;
     },
   }))

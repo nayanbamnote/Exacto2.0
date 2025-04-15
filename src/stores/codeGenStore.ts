@@ -33,7 +33,7 @@ const generateContainerCode = (
   cumulativeHeight: number = 0
 ): string => {
   const indent = '  '.repeat(indentLevel);
-  const { id, x, y, width, height, styles, children } = container;
+  const { id, x, y, width, height, styles, children, rotation } = container;
   
   // Generate inline CSS
   const cssProperties = [
@@ -42,6 +42,7 @@ const generateContainerCode = (
     `background-color: ${styles.backgroundColor}`,
     `border: ${styles.border}`,
     `z-index: ${styles.zIndex}`,
+    `transform: rotate(${rotation}deg)`,
   ];
   
   // Add positioning based on nesting
