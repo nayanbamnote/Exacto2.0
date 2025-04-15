@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Container, useCanvasStore } from "@/stores/canvasStore";
 import { ClientOnlySortableTree } from "./ClientOnlySortableTree";
 import { containersToTreeItems, updateContainersFromTree } from "./canvasStoreAdapter";
@@ -89,16 +89,32 @@ export function CanvasTreeView({
   const prevContainersRef = useRef<Record<string, Container>>({});
   // Track if we're handling a selection from the tree to avoid loops
   const isSelectingFromTree = useRef(false);
+  // Track last import status to detect changes
+  const lastImportStatusRef = useRef(importStatus);
+  // Add a key to force re-render of the tree component
+  const [treeKey, setTreeKey] = useState(0);
+
+  // Function to update the tree with latest containers
+  const updateTreeWithLatestContainers = useCallback(() => {
+    console.log("Force updating tree view with containers:", Object.keys(containers).length);
+    const items = containersToTreeItems(containers);
+    setTreeItems(items);
+    prevContainersRef.current = { ...containers };
+    // Force rebuild the tree component by updating its key
+    setTreeKey(prevKey => prevKey + 1);
+  }, [containers]);
 
   // Force update the tree when import is successful
   useEffect(() => {
-    if (importStatus === 'success') {
-      // Force update the tree view with the latest containers
-      const items = containersToTreeItems(containers);
-      setTreeItems(items);
-      prevContainersRef.current = { ...containers };
+    if (importStatus === 'success' && lastImportStatusRef.current !== 'success') {
+      console.log("Import success detected, updating tree view");
+      // Small delay to ensure the canvas store has fully updated
+      setTimeout(() => {
+        updateTreeWithLatestContainers();
+      }, 100);
     }
-  }, [importStatus, containers]);
+    lastImportStatusRef.current = importStatus;
+  }, [importStatus, updateTreeWithLatestContainers]);
 
   // Convert containers to tree items whenever containers change
   useEffect(() => {
@@ -144,6 +160,7 @@ export function CanvasTreeView({
   return (
     <div className="relative">
       <ClientOnlySortableTree
+        key={treeKey}
         className={className}
         collapsible={collapsible}
         defaultItems={treeItems}

@@ -106,7 +106,7 @@ export function ImportCode() {
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
                 placeholder="Paste your code here..."
-                className="font-mono text-sm border-0 h-full focus-visible:ring-0"
+                className="font-mono text-sm border-0 h-full min-h-[300px] focus-visible:ring-0"
                 disabled={importStatus === 'processing' || importStatus === 'success'}
               />
             </ScrollArea>
