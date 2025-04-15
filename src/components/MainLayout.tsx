@@ -50,7 +50,7 @@ export function MainLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <SidebarTrigger className="absolute z-10 left-4 top-4" />
+        <SidebarTrigger className="absolute z-[1] left-4 top-4" />
         <div className="flex-1 flex flex-col relative bg-sidebar">
           {/* Responsive toolbar position based on sidebar state */}
           <ToolbarWithPosition />
