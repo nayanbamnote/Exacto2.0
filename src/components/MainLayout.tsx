@@ -38,7 +38,7 @@ export function MainLayout({
         <Sidebar>
           <SidebarHeader className="border-b p-4 ">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold flex-1 text-center">Container Explorer</h2>
+              <h2 className="text-lg font-semibold flex-1 text-center">Relative+Absolute</h2>
               <SidebarTrigger />
             </div>
           </SidebarHeader>
