@@ -101,12 +101,12 @@ export function ImportCode() {
               </div>
             )}
             
-            <ScrollArea className="flex-1 w-full rounded-md border min-h-[300px]">
+            <ScrollArea className="w-full rounded-md border h-[300px]">
               <Textarea
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
                 placeholder="Paste your code here..."
-                className="font-mono text-sm border-0 resize-none h-full min-h-[300px] focus-visible:ring-0"
+                className="font-mono text-sm border-0 h-full focus-visible:ring-0"
                 disabled={importStatus === 'processing' || importStatus === 'success'}
               />
             </ScrollArea>

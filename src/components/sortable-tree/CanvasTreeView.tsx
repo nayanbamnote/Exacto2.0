@@ -6,6 +6,7 @@ import { ClientOnlySortableTree } from "./ClientOnlySortableTree";
 import { containersToTreeItems, updateContainersFromTree } from "./canvasStoreAdapter";
 import { TreeItems } from "./types";
 import { useUIStore } from "@/stores/uiStore";
+import { useImportStore } from "@/stores/importStore";
 
 // Helper function to check if containers have changed in a way that affects the tree
 function haveContainersChanged(
@@ -77,6 +78,9 @@ export function CanvasTreeView({
     unnestContainer
   } = useCanvasStore();
   
+  // Get import store status to detect when import completes
+  const { importStatus } = useImportStore();
+  
   const { selectedContainerId, selectContainer } = useUIStore();
   
   // Add a ref to track if we're currently updating from tree changes
@@ -85,6 +89,16 @@ export function CanvasTreeView({
   const prevContainersRef = useRef<Record<string, Container>>({});
   // Track if we're handling a selection from the tree to avoid loops
   const isSelectingFromTree = useRef(false);
+
+  // Force update the tree when import is successful
+  useEffect(() => {
+    if (importStatus === 'success') {
+      // Force update the tree view with the latest containers
+      const items = containersToTreeItems(containers);
+      setTreeItems(items);
+      prevContainersRef.current = { ...containers };
+    }
+  }, [importStatus, containers]);
 
   // Convert containers to tree items whenever containers change
   useEffect(() => {
