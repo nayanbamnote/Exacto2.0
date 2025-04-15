@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist } from 'zustand/middleware';
 import { useCanvasStore, Container } from './canvasStore';
 
 interface ImportState {
@@ -12,7 +13,7 @@ interface ImportState {
 /**
  * Parses an HTML string and extracts container data
  */
-function parseHTMLToContainers(htmlString: string): Record<string, Container> | null {
+function parseHTMLToContainers(htmlString: string): { success: boolean; containers?: Record<string, Container>; error?: string } {
   try {
     // Create a DOMParser to parse the HTML string
     const parser = new DOMParser();
@@ -21,13 +22,13 @@ function parseHTMLToContainers(htmlString: string): Record<string, Container> | 
     // Check for parsing errors
     const parseError = doc.querySelector('parsererror');
     if (parseError) {
-      throw new Error('Invalid HTML format');
+      return { success: false, error: 'Invalid HTML format' };
     }
     
     // Get all elements with IDs (our containers)
     const elements = doc.querySelectorAll('[id]');
     if (elements.length === 0) {
-      throw new Error('No elements with IDs found in the HTML');
+      return { success: false, error: 'No elements with IDs found in the HTML' };
     }
     
     // Create a mapping of elements
@@ -112,109 +113,133 @@ function parseHTMLToContainers(htmlString: string): Record<string, Container> | 
       }
     });
     
-    return containers;
+    return { success: true, containers };
   } catch (error) {
-    console.error('Error parsing HTML:', error);
-    return null;
+    console.warn('Error parsing HTML:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error parsing HTML'
+    };
   }
 }
 
 export const useImportStore = create<ImportState>()(
-  immer((set) => ({
-    importStatus: 'idle',
-    errorMessage: null,
-    
-    setImportStatus: (status, errorMsg = undefined) => {
-      set((state) => {
-        state.importStatus = status;
-        state.errorMessage = errorMsg || null;
-      });
-    },
-    
-    importCode: (htmlString) => {
-      // Set status to processing
-      set((state) => {
-        state.importStatus = 'processing';
-        state.errorMessage = null;
-      });
+  persist(
+    immer((set) => ({
+      importStatus: 'idle',
+      errorMessage: null,
       
-      try {
-        // Parse HTML to container objects
-        const containers = parseHTMLToContainers(htmlString);
+      setImportStatus: (status, errorMsg = undefined) => {
+        set((state) => {
+          state.importStatus = status;
+          state.errorMessage = errorMsg || null;
+        });
+      },
+      
+      importCode: (htmlString) => {
+        // Set status to processing
+        set((state) => {
+          state.importStatus = 'processing';
+          state.errorMessage = null;
+        });
         
-        if (!containers) {
-          throw new Error('Failed to parse HTML content');
+        try {
+          // Parse HTML to container objects - with improved error handling
+          const result = parseHTMLToContainers(htmlString);
+          
+          if (!result.success || !result.containers) {
+            // Handle error without throwing (which would crash the app)
+            set((state) => {
+              state.importStatus = 'error';
+              state.errorMessage = result.error || 'Failed to parse HTML content';
+            });
+            
+            // Use console.info instead of console.error for validation issues
+            // This way it's less alarming in the console
+            console.info('Import validation issue:', result.error);
+            return;
+          }
+          
+          const containers = result.containers;
+          
+          // Log the final JSON object
+          console.log('Parsed HTML into containers:', JSON.stringify(containers, null, 2));
+          
+          // Access canvas store and clear existing containers
+          const canvasStore = useCanvasStore.getState();
+          
+          // Get existing containers to remove them
+          const existingContainers = canvasStore.getAllContainers();
+          existingContainers.forEach(container => {
+            canvasStore.removeContainer(container.id);
+          });
+          
+          // Add new containers to canvas store
+          Object.values(containers).forEach(container => {
+            // Only add containers without parents first (root containers)
+            if (container.parentId === null) {
+              // Create container in canvas store with the original ID
+              canvasStore.addContainer({
+                id: container.id,
+                x: container.x,
+                y: container.y,
+                width: container.width,
+                height: container.height,
+                rotation: container.rotation,
+                styles: {
+                  backgroundColor: container.styles.backgroundColor,
+                  border: container.styles.border,
+                  zIndex: container.styles.zIndex,
+                },
+                children: container.children,
+                parentId: null,
+              });
+            }
+          });
+          
+          // Now add child containers - their positions are already relative to their parents
+          Object.values(containers).forEach(container => {
+            if (container.parentId !== null) {
+              // Create child container with the original ID and parent relationship
+              canvasStore.addContainer({
+                id: container.id,
+                x: container.x,
+                y: container.y,
+                width: container.width,
+                height: container.height,
+                rotation: container.rotation,
+                styles: {
+                  backgroundColor: container.styles.backgroundColor,
+                  border: container.styles.border,
+                  zIndex: container.styles.zIndex,
+                },
+                children: container.children,
+                parentId: container.parentId,
+              });
+            }
+          });
+          
+          // Set import status to success
+          set((state) => {
+            state.importStatus = 'success';
+          });
+        } catch (error) {
+          // Set import status to error with message
+          set((state) => {
+            state.importStatus = 'error';
+            state.errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          });
+          
+          console.warn('Import unexpected error:', error);
         }
-        
-        // Log the final JSON object
-        console.log('Parsed HTML into containers:', JSON.stringify(containers, null, 2));
-        
-        // Access canvas store and clear existing containers
-        const canvasStore = useCanvasStore.getState();
-        
-        // Get existing containers to remove them
-        const existingContainers = canvasStore.getAllContainers();
-        existingContainers.forEach(container => {
-          canvasStore.removeContainer(container.id);
-        });
-        
-        // Add new containers to canvas store
-        Object.values(containers).forEach(container => {
-          // Only add containers without parents first (root containers)
-          if (container.parentId === null) {
-            // Create container in canvas store with the original ID
-            canvasStore.addContainer({
-              id: container.id,
-              x: container.x,
-              y: container.y,
-              width: container.width,
-              height: container.height,
-              rotation: container.rotation,
-              styles: {
-                backgroundColor: container.styles.backgroundColor,
-                border: container.styles.border,
-                zIndex: container.styles.zIndex,
-              },
-              children: container.children,
-              parentId: null,
-            });
-          }
-        });
-        
-        // Now add child containers - their positions are already relative to their parents
-        Object.values(containers).forEach(container => {
-          if (container.parentId !== null) {
-            // Create child container with the original ID and parent relationship
-            canvasStore.addContainer({
-              id: container.id,
-              x: container.x,  // Position is already relative to parent from HTML parsing
-              y: container.y,  // Position is already relative to parent from HTML parsing
-              width: container.width,
-              height: container.height,
-              rotation: container.rotation,
-              styles: {
-                backgroundColor: container.styles.backgroundColor,
-                border: container.styles.border,
-                zIndex: container.styles.zIndex,
-              },
-              children: container.children,
-              parentId: container.parentId,
-            });
-          }
-        });
-        
-        // Set status to success
-        set((state) => {
-          state.importStatus = 'success';
-        });
-      } catch (error) {
-        console.error('Import error:', error);
-        // Set status to error with message
-        set((state) => {
-          state.importStatus = 'error';
-          state.errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        });
-      }
-    },
-  }))
+      },
+    })),
+    {
+      name: 'import-storage', // unique name for localStorage key
+      partialize: (state) => ({
+        importStatus: state.importStatus,
+        errorMessage: state.errorMessage,
+      }),
+    }
+  )
 );

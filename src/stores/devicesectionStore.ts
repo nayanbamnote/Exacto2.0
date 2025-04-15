@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface DevicePreset {
   name: string;
@@ -28,32 +29,43 @@ interface CanvasState {
   resetZoom: () => void;
 }
 
-export const useCanvasStore = create<CanvasState>((set) => ({
-  selectedDevice: 'desktop',
-  zoomLevel: 1,
-  canvasWidth: devicePresets.desktop.width,
-  canvasHeight: devicePresets.desktop.height,
-  
-  setSelectedDevice: (device) => 
-    set((state) => ({
-      selectedDevice: device,
-      canvasWidth: devicePresets[device].width,
-      canvasHeight: devicePresets[device].height,
-    })),
-  
-  setZoomLevel: (level) => 
-    set({ zoomLevel: Math.max(0.1, Math.min(5, level)) }),
-  
-  incrementZoom: () => 
-    set((state) => ({ 
-      zoomLevel: Math.min(5, state.zoomLevel + 0.1) 
-    })),
-  
-  decrementZoom: () => 
-    set((state) => ({ 
-      zoomLevel: Math.max(0.1, state.zoomLevel - 0.1) 
-    })),
-  
-  resetZoom: () => 
-    set({ zoomLevel: 1 }),
-})); 
+export const useCanvasStore = create<CanvasState>()(
+  persist(
+    (set) => ({
+      selectedDevice: 'desktop',
+      zoomLevel: 1,
+      canvasWidth: devicePresets.desktop.width,
+      canvasHeight: devicePresets.desktop.height,
+      
+      setSelectedDevice: (device) => 
+        set((state) => ({
+          selectedDevice: device,
+          canvasWidth: devicePresets[device].width,
+          canvasHeight: devicePresets[device].height,
+        })),
+      
+      setZoomLevel: (level) => 
+        set({ zoomLevel: Math.max(0.1, Math.min(5, level)) }),
+      
+      incrementZoom: () => 
+        set((state) => ({ 
+          zoomLevel: Math.min(5, state.zoomLevel + 0.1) 
+        })),
+      
+      decrementZoom: () => 
+        set((state) => ({ 
+          zoomLevel: Math.max(0.1, state.zoomLevel - 0.1) 
+        })),
+      
+      resetZoom: () => 
+        set({ zoomLevel: 1 }),
+    }),
+    {
+      name: 'device-settings-storage', // unique name for localStorage key
+      partialize: (state) => ({
+        selectedDevice: state.selectedDevice,
+        zoomLevel: state.zoomLevel,
+      }),
+    }
+  )
+); 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist } from 'zustand/middleware';
 import { Container, useCanvasStore } from './canvasStore';
 
 /**
@@ -93,27 +94,28 @@ const generateContainerCode = (
  * Store for code generation
  */
 export const useCodeGenStore = create<CodeGenState>()(
-  immer((set) => ({
-    generatedCode: '',
-    codeStatus: 'idle',
-    errorMessage: null,
-    
-    /**
-     * Generate HTML/CSS code from the canvas containers
-     */
-    generateCode: () => {
-      set((state) => {
-        state.codeStatus = 'generating';
-        state.errorMessage = null;
-      });
+  persist(
+    immer((set) => ({
+      generatedCode: '',
+      codeStatus: 'idle',
+      errorMessage: null,
       
-      try {
-        // Access the canvas store to get containers
-        const containers = useCanvasStore.getState().containers;
-        const rootContainers = useCanvasStore.getState().getRootContainers();
+      /**
+       * Generate HTML/CSS code from the canvas containers
+       */
+      generateCode: () => {
+        set((state) => {
+          state.codeStatus = 'generating';
+          state.errorMessage = null;
+        });
         
-        // Start HTML template
-        let generatedHtml = `<!DOCTYPE html>
+        try {
+          // Access the canvas store to get containers
+          const containers = useCanvasStore.getState().containers;
+          const rootContainers = useCanvasStore.getState().getRootContainers();
+          
+          // Start HTML template
+          let generatedHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -133,47 +135,55 @@ export const useCodeGenStore = create<CodeGenState>()(
 </head>
 <body>
 `;
-        
-        // Sort root containers by z-index
-        const sortedRootContainers = [...rootContainers].sort(
-          (a, b) => (a.styles.zIndex || 0) - (b.styles.zIndex || 0)
-        );
-        
-        // Calculate cumulative heights for relative positioning adjustment
-        let cumulativeHeight = 0;
-        
-        // Generate code for each root container with adjusted positioning
-        for (const container of sortedRootContainers) {
-          generatedHtml += generateContainerCode(container, containers, 1, cumulativeHeight);
-          cumulativeHeight += container.height;
-        }
-        
-        // Complete HTML template
-        generatedHtml += `</body>
+          
+          // Sort root containers by z-index
+          const sortedRootContainers = [...rootContainers].sort(
+            (a, b) => (a.styles.zIndex || 0) - (b.styles.zIndex || 0)
+          );
+          
+          // Calculate cumulative heights for relative positioning adjustment
+          let cumulativeHeight = 0;
+          
+          // Generate code for each root container with adjusted positioning
+          for (const container of sortedRootContainers) {
+            generatedHtml += generateContainerCode(container, containers, 1, cumulativeHeight);
+            cumulativeHeight += container.height;
+          }
+          
+          // Complete HTML template
+          generatedHtml += `</body>
 </html>`;
-        
-        // Update state with generated code
+          
+          // Update state with generated code
+          set((state) => {
+            state.generatedCode = generatedHtml;
+            state.codeStatus = 'success';
+          });
+        } catch (error) {
+          // Handle errors
+          set((state) => {
+            state.codeStatus = 'error';
+            state.errorMessage = error instanceof Error ? error.message : 'Unknown error during code generation';
+          });
+        }
+      },
+      
+      /**
+       * Set the status of code generation
+       */
+      setCodeStatus: (status: CodeStatus, error?: string) => {
         set((state) => {
-          state.generatedCode = generatedHtml;
-          state.codeStatus = 'success';
+          state.codeStatus = status;
+          state.errorMessage = error || null;
         });
-      } catch (error) {
-        // Handle errors
-        set((state) => {
-          state.codeStatus = 'error';
-          state.errorMessage = error instanceof Error ? error.message : 'Unknown error during code generation';
-        });
-      }
-    },
-    
-    /**
-     * Set the status of code generation
-     */
-    setCodeStatus: (status: CodeStatus, error?: string) => {
-      set((state) => {
-        state.codeStatus = status;
-        state.errorMessage = error || null;
-      });
-    },
-  }))
+      },
+    })),
+    {
+      name: 'codegen-storage', // unique name for localStorage key
+      partialize: (state) => ({
+        generatedCode: state.generatedCode,
+        codeStatus: state.codeStatus,
+      }),
+    }
+  )
 ); 

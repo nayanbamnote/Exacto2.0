@@ -50,9 +50,12 @@ export function Toolbar() {
         
         <div className="h-6 w-px bg-border mx-1" />
         
-        <BorderControls
-        />
+        {/* <BorderControls/> */}
         
+        <div className="h-6 w-px bg-border mx-1" />
+        
+        
+        <ZIndexManager />
         <div className="h-6 w-px bg-border mx-1" />
         
         <AddContainer
@@ -60,10 +63,6 @@ export function Toolbar() {
           setContainerProps={setContainerProps}
           handleInputChange={handleInputChange}
         />
-
-        <div className="h-6 w-px bg-border mx-1" />
-        
-        <ZIndexManager />
 
         <div className="h-6 w-px bg-border mx-1" />
         

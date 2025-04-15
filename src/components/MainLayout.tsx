@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Sidebar,
   SidebarHeader,
@@ -8,6 +8,7 @@ import {
   SidebarTrigger,
   SidebarProvider,
   SidebarMenu,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { ClientOnlySortableTree } from "@/components/sortable-tree/ClientOnlySortableTree";
 import { ElementPlayground } from "@/components/ElementPlayground";
@@ -18,6 +19,16 @@ interface SortableSidebarProps {
   defaultOpen?: boolean;
 }
 
+function ToolbarWithPosition() {
+  const { open } = useSidebar();
+  
+  return (
+    <div className={`fixed top-4 z-10 flex items-center transition-all duration-300 ${open ? 'left-[400px]' : 'left-[300px]'}`}>
+      <Toolbar />
+    </div>
+  );
+}
+
 export function MainLayout({ 
   defaultOpen = true
 }: SortableSidebarProps) {
@@ -25,8 +36,11 @@ export function MainLayout({
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex h-screen w-full">
         <Sidebar>
-          <SidebarHeader className="border-b p-4">
-            <h2 className="text-lg font-semibold">Container Explorer</h2>
+          <SidebarHeader className="border-b p-4 ">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold flex-1 text-center">Container Explorer</h2>
+              <SidebarTrigger />
+            </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
@@ -36,12 +50,10 @@ export function MainLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
+        <SidebarTrigger className="absolute z-10 left-4 top-4" />
         <div className="flex-1 flex flex-col relative bg-sidebar">
-          {/* Fixed floating toolbar */}
-          <div className="fixed top-4  z-10 flex items-center gap-4">
-            <SidebarTrigger />
-            <Toolbar />
-          </div>
+          {/* Responsive toolbar position based on sidebar state */}
+          <ToolbarWithPosition />
           
           {/* Content area with full height for canvas */}
           <div className="flex-1">
