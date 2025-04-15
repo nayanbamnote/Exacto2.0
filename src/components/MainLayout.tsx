@@ -14,6 +14,9 @@ import { ClientOnlySortableTree } from "@/components/sortable-tree/ClientOnlySor
 import { ElementPlayground } from "@/components/ElementPlayground";
 import { Toolbar } from "@/components/Toolbar";
 import { CanvasTreeView } from "./sortable-tree/CanvasTreeView";
+import Link from "next/link";
+import { InfoIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SortableSidebarProps {
   defaultOpen?: boolean;
@@ -21,24 +24,32 @@ interface SortableSidebarProps {
 
 function ToolbarWithPosition() {
   const { open } = useSidebar();
-  
+
   return (
-    <div className={`fixed top-4 z-10 flex items-center transition-all duration-300 ${open ? 'left-[400px]' : 'left-[300px]'}`}>
+    <div
+      className={`fixed top-4 z-10 flex items-center transition-all duration-300 ${
+        open ? "left-[400px]" : "left-[300px]"
+      }`}>
       <Toolbar />
     </div>
   );
 }
 
-export function MainLayout({ 
-  defaultOpen = true
-}: SortableSidebarProps) {
+export function MainLayout({ defaultOpen = true }: SortableSidebarProps) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex h-screen w-full">
         <Sidebar>
-          <SidebarHeader className="border-b p-4 ">
+          <SidebarHeader className="border-b p-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold flex-1 text-center">Relative+Absolute</h2>
+              <div className="flex items-center justify-center gap-2">
+                <Link href="/about">
+                    <InfoIcon className="h-4 w-4" />
+                </Link>
+                <h2 className="text-lg font-semibold flex-1 text-center">
+                  Relative+Absolute
+                </h2>
+              </div>
               <SidebarTrigger />
             </div>
           </SidebarHeader>
@@ -54,7 +65,7 @@ export function MainLayout({
         <div className="flex-1 flex flex-col relative bg-sidebar">
           {/* Responsive toolbar position based on sidebar state */}
           <ToolbarWithPosition />
-          
+
           {/* Content area with full height for canvas */}
           <div className="flex-1">
             <ElementPlayground />
@@ -63,4 +74,4 @@ export function MainLayout({
       </div>
     </SidebarProvider>
   );
-} 
+}
